@@ -1,6 +1,6 @@
 'use strict';
 // The layered note format: parse a note, build its Map, validate the layout.
-// Layout of every project note (see NOTE-FORMAT.md):
+// Layout of every project note (see docs/NOTE-FORMAT.md):
 //   frontmatter, "## Now" (<= 40 lines, read every time), "## Map" (generated), detail sections, "## Archive" (last).
 // Only the Now block is capped, because it is the part every chat reads. Nothing else has a size limit.
 
