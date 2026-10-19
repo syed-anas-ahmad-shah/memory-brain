@@ -4,7 +4,7 @@
 
 **Persistent, searchable, backed-up memory for Claude Code.**
 
-Claude looks up past decisions before it answers, records what failed or was decided, and shows you at the start of every chat whether the memory is healthy.
+Claude keeps your whole project history searchable but loads only what each question needs, so it stays informed at a fraction of the token cost. It records what failed or was decided, and shows you at the start of every chat whether the memory is healthy.
 
 [![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -12,7 +12,7 @@ Claude looks up past decisions before it answers, records what failed or was dec
 [![Platforms](https://img.shields.io/badge/tested-Windows%20%7C%20Linux-lightgrey)](#verification)
 [![Dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)](#architecture)
 
-[Quick start](#quick-start) · [Features](#features) · [Architecture](#architecture) · [Configuration](#configuration) · [Security](#security-and-privacy) · [Documentation](#documentation)
+[Quick start](#quick-start) · [Smart context](#smart-context) · [Features](#features) · [Architecture](#architecture) · [Configuration](#configuration) · [Security](#security-and-privacy) · [Documentation](#documentation)
 
 </div>
 
@@ -26,10 +26,35 @@ Claude Code starts every conversation without knowing what you decided yesterday
 |---|---|
 | Past decisions are forgotten between chats | Claude searches your notes before answering questions about past work |
 | Notes go stale or get lost | A health badge reports note count, staleness and backup status in every new chat |
-| Large notes waste context | Notes are layered: read a short summary first, open detail only when needed |
+| Loading all notes burns tokens | Smart context: everything stays searchable, but Claude fetches only the part a question needs, when it needs it |
 | Memory has no safety net | Every change is committed to git and pushed to a remote you choose, and the push is verified |
 | Secrets leak into notes | Writes, commits and pushes that contain key-shaped text are refused |
 | The model guesses when nothing is recorded | Claude is instructed to answer "not recorded" instead |
+
+## Smart context
+
+Memory Brain never pastes your notes into the conversation. Claude knows what exists from a cheap index, and pulls detail in tiers, stopping as soon as it has the answer.
+
+| Tier | Tool call | What comes back | Typical cost |
+|---|---|---|---|
+| 1. Discover | `memory_index` | One line per project, or every open failure and to-do with `open: true` | Smallest |
+| 2. Locate | `memory_search` | The best few notes, each with a short snippet. Finds notes by any wording, typos included | Small |
+| 3. Understand | `memory_read` | Only the **Now** summary and the **Map** of one note | Small, fixed size |
+| 4. Drill down | `memory_read` with `sections` or `entries` | Just the section or Log entries you name | On demand |
+| 5. Deep analysis | `memory_read` with `full: true` | The whole note, including the Archive | Rare |
+
+The summary tier stays small because **Now** is capped at 40 lines and generated from the Log, so it does not grow as history piles up.
+
+**Measured on a real memory folder** (50 layered project notes, token counts estimated at 4 characters per token):
+
+| | Tokens |
+|---|---|
+| All 50 notes in full | about 411,000 |
+| Their summary blocks (what a normal lookup reads) | about 54,000 |
+| Reduction | about 87% |
+| Largest single note: full vs summary | about 129,000 vs about 1,500 |
+
+Nothing is lost to get this saving. The full history stays on disk and is one tool call away. When the notes do not state an answer, Claude says "not recorded" instead of reading more or guessing.
 
 ## Features
 
@@ -37,6 +62,7 @@ Claude Code starts every conversation without knowing what you decided yesterday
 |---|---|
 | **Health badge** | One line at the start of each new chat: live notes, stale notes, last save, last backup, problems. |
 | **Four MCP tools** | `memory_index`, `memory_search`, `memory_read`, `memory_add`. Search is field-weighted BM25 with typo tolerance, aliases and folder-aware ranking. |
+| **Smart context** | Tiered, on-demand retrieval: discover, locate, summarise, then drill down only as far as the question needs. About 87% fewer tokens than loading notes in full on a real memory folder. See [Smart context](#smart-context). |
 | **Layered notes** | Each project note has a generated **Now** summary, a generated **Map**, an append-only dated **Log**, and an **Archive**. See [NOTE-FORMAT](docs/NOTE-FORMAT.md). |
 | **Tamper detection** | If a note is edited by hand after its last Log entry, reads and searches warn that the summary may be stale. |
 | **Save reminder** | After a reply that edited three or more files without logging, Claude is reminded once (at most every 30 minutes per chat). |
