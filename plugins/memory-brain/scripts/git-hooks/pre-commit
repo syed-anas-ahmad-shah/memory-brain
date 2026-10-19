@@ -1,0 +1,5 @@
+#!/bin/sh
+# memory-brain secret guard: blocks a commit that contains a real secret shape (installed by install-git-hooks.js)
+ROOT="$(git rev-parse --show-toplevel)"
+node "$(dirname "$0")/memory-brain-secret-scan.js" --staged --repo "$ROOT" || exit 1
+exit 0

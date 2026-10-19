@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "memory-brain": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-server.js"],
+      "env": { "MEMORY_BRAIN_DIR": "${user_config.brain_dir}" }
+    }
+  }
+}

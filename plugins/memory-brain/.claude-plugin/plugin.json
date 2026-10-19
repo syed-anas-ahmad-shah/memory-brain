@@ -1,0 +1,55 @@
+{
+  "name": "memory-brain",
+  "displayName": "Memory Brain",
+  "version": "0.4.0",
+  "description": "Visible, backed-up memory for Claude Code: a health badge on every new chat, a diary log, a secret scanner and automatic git backup of your memory folder.",
+  "author": {
+    "name": "Anas"
+  },
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "backup",
+    "auto-memory",
+    "hooks",
+    "productivity",
+    "claude-code",
+    "claude-code-plugin",
+    "mcp",
+    "memory-search"
+  ],
+  "userConfig": {
+    "brain_dir": {
+      "type": "directory",
+      "title": "Memory folder",
+      "description": "The folder that holds your memory notes (MEMORY.md lives here). Usually the same folder as autoMemoryDirectory."
+    },
+    "backup_remote": {
+      "type": "string",
+      "title": "Backup git address",
+      "description": "Where backups are pushed: a git remote name (e.g. origin) or any git URL. Leave empty for local-only commits."
+    },
+    "stale_days": {
+      "type": "number",
+      "title": "Days before a project note counts as stale",
+      "description": "Project notes not edited for this many days are counted as stale in the badge.",
+      "default": 30,
+      "min": 1
+    },
+    "gh_account": {
+      "type": "string",
+      "title": "GitHub CLI account to push as (optional)",
+      "description": "If set, backups push with this gh login's token instead of git's saved account. Leave empty for plain git."
+    },
+    "commit_name": {
+      "type": "string",
+      "title": "Backup commit author name (optional)",
+      "description": "Name on backup commits. Leave empty to use your git config."
+    },
+    "commit_email": {
+      "type": "string",
+      "title": "Backup commit author email (optional)",
+      "description": "Email on backup commits, e.g. a noreply address. Leave empty to use your git config."
+    }
+  }
+}

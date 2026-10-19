@@ -1,0 +1,12 @@
+{
+  "name": "memory-brain-market",
+  "description": "Marketplace for Memory Brain, a visible, backed-up memory for Claude Code.",
+  "owner": { "name": "Anas" },
+  "plugins": [
+    {
+      "name": "memory-brain",
+      "source": "./plugins/memory-brain",
+      "description": "Visible, backed-up memory for Claude Code: a health badge on every new chat, a diary log, a secret scanner and automatic git backup of your memory folder."
+    }
+  ]
+}
