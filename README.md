@@ -93,16 +93,16 @@ To make Claude consult memory in every chat, add the short rule from the [Guide]
 ## Architecture
 
 ```mermaid
-flowchart LR
-    U[You ask about past work] --> C[Claude Code]
-    C -->|memory_search| S[Search index]
-    S --> N[(Markdown notes)]
-    C -->|memory_read| N
-    C -->|memory_add| L[Log entry]
+flowchart TB
+    U["You ask about past work"] --> C["Claude Code"]
+    C -->|memory_search| S["Search index"]
+    C -->|memory_read| N[("Markdown notes")]
+    C -->|memory_add| L["Log entry"]
+    S --> N
     L --> N
-    N -->|session start / backup| B[Secret scan + health check]
-    B --> G[git commit + verified push]
-    G --> R[(Your private remote)]
+    N -->|"session start / backup"| B["Secret scan + health check"]
+    B --> G["git commit + verified push"]
+    G --> R[("Your private remote")]
 ```
 
 | Layer | Implementation |
