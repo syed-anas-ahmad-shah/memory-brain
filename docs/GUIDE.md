@@ -77,7 +77,7 @@ The warning goes away when you add the next Log entry (`memory_add`). `note-gen 
 
 ## 6. The save reminder
 
-After a reply that edited 3 or more files and logged nothing, Claude gets one reminder to call `memory_add`. It fires at most once per 30 minutes per chat and never loops. To switch it off, remove its entry from `hooks/hooks.json`.
+The hook counts file edits and shell commands in the whole chat since the last `memory_add` (or note written directly in the memory folder). At 4 or more, Claude gets one reminder to call `memory_add`. It fires at most once per 10 minutes per chat and never loops. Reads and searches do not count. To switch it off, remove its entry from `hooks/hooks.json`.
 
 ## 7. Undo and restore
 

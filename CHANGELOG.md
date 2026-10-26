@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- **Stricter save reminder.** It used to count only file edits inside one reply, so a deploy or a test run (shell commands) was never reminded and saves batched over many replies slipped through. Now it counts file edits and shell commands in the whole chat since the last `memory_add` (or note written directly in the brain), reminds at 4 or more, and the cooldown is 10 minutes (was 30). Reads and searches do not count.
+- Tests: main 83, note-convert 27, memory-tools 67, note-log 60, note-format 28, save-reminder 23 (planted bugs: threshold and "commands ignored" both fail the suite).
+
 ## 0.4.0
 
 - **`/memory-brain:convert`**: turns older prose notes into layered notes (Log + generated Now and Map) without losing a line. Claude writes a small spec from the note's own text; `scripts/note-convert.js` previews it (dry run), proves "0 original lines lost", backs the old note up to `.convert-backup/` and writes only after a yes. `--list` shows which notes are still old. Colliding headings (`## Now`, `## Map`, `## Log`, `## Archive`) are kept as `## Old ...`.

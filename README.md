@@ -6,7 +6,7 @@
 
 Claude keeps your whole project history searchable but loads only what each question needs, so it stays informed at a fraction of the token cost. It records what failed or was decided, and shows you at the start of every chat whether the memory is healthy.
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-339933)](https://nodejs.org)
 [![Platforms](https://img.shields.io/badge/tested-Windows%20%7C%20Linux-lightgrey)](#verification)
@@ -65,7 +65,7 @@ Nothing is lost to get this saving. The full history stays on disk and is one to
 | **Smart context** | Tiered, on-demand retrieval: discover, locate, summarise, then drill down only as far as the question needs. About 87% fewer tokens than loading notes in full on a real memory folder. See [Smart context](#smart-context). |
 | **Layered notes** | Each project note has a generated **Now** summary, a generated **Map**, an append-only dated **Log**, and an **Archive**. See [NOTE-FORMAT](docs/NOTE-FORMAT.md). |
 | **Tamper detection** | If a note is edited by hand after its last Log entry, reads and searches warn that the summary may be stale. |
-| **Save reminder** | After a reply that edited three or more files without logging, Claude is reminded once (at most every 30 minutes per chat). |
+| **Save reminder** | When four or more file edits or shell commands (deploys, tests, builds) have happened in a chat since the last `memory_add`, Claude is reminded once (at most every 10 minutes per chat). |
 | **Verified backup** | Secret scan, health check, commit, push, then a check that the remote holds the same commit. Success is reported only if it does. |
 | **Secret guard** | Refuses key-shaped text in `memory_add`, in the git pre-commit and pre-push hooks, and before every backup. |
 | **Lossless converter** | `/memory-brain:convert` migrates existing prose notes to the layered format, previews each one, proves no original line is lost, and backs up first. |
@@ -142,7 +142,7 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 | Check | Result |
 |---|---|
-| Automated tests | 6 suites (main 83, note-convert 27, memory-tools 67, note-log 60, note-format 28, save-reminder 18). Planted-bug copies are used to confirm the tests fail when they should. |
+| Automated tests | 6 suites (main 83, note-convert 27, memory-tools 67, note-log 60, note-format 28, save-reminder 23). Planted-bug copies are used to confirm the tests fail when they should. |
 | Platforms | Windows and Linux (Ubuntu 24.04 under WSL, Node 22) pass every suite. A clean-machine install, setup, recall and convert run was completed with real Claude Code. **macOS is plain Node but has not been run.** |
 | Retrieval quality | The right note is in the top 3 results for about 92% of 64 test questions (a plain index scores 53%). This measures finding the note, not answer correctness. |
 | Answer quality | In a 14-question run with a small model and an automatic grader: 9 fully correct, 4 partly correct, 1 wrong, memory tools used every time. A small sample, not a benchmark. |

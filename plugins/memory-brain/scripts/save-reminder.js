@@ -1,45 +1,48 @@
 #!/usr/bin/env node
-// Memory Brain: Stop hook. After a reply that edited several files but logged nothing to memory,
-// asks Claude once to log it (memory_add). Quiet by design: needs 3+ edits in the reply,
-// fires at most once per 30 minutes per chat, never loops (stop_hook_active), never blocks on an error.
+// Memory Brain: Stop hook. Counts the real work done in this chat since the last memory_add
+// (file edits and shell commands: deploys, tests, builds) and, when 4+ actions are unsaved,
+// asks Claude once to log it (memory_add). Quiet by design: fires at most once per 10 minutes
+// per chat, never loops (stop_hook_active), never blocks on an error.
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const MIN_EDITS = 3;
-const COOLDOWN_MS = 30 * 60 * 1000;
+const MIN_WORK = 4;
+const COOLDOWN_MS = 10 * 60 * 1000;
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
+const COMMAND_TOOLS = new Set(['Bash', 'PowerShell']);
 
 const norm = (p) => String(p || '').replace(/\\/g, '/').toLowerCase();
 
 // Pure decision, exported for tests. `lines` = parsed transcript entries, `brain` = memory folder.
+// Work counts from the whole chat, not one reply, so saves batched over many replies are caught.
+// A memory_add, or a note written directly in the brain, resets the count.
 function decide(lines, brain) {
-  let start = 0;
-  lines.forEach((e, i) => {
-    const c = e && e.message && e.message.content;
-    const isUser = e && e.type === 'user' && e.message && e.message.role === 'user';
-    const realPrompt = typeof c === 'string' || (Array.isArray(c) && c.some((x) => x && x.type === 'text'));
-    if (isUser && realPrompt) start = i + 1;
-  });
   const b = norm(brain);
+  let work = 0;
   let edits = 0;
   let logged = false;
-  for (const e of lines.slice(start)) {
+  for (const e of lines) {
     const c = e && e.message && e.message.content;
     if (!e || e.type !== 'assistant' || !Array.isArray(c)) continue;
     for (const t of c) {
       if (!t || t.type !== 'tool_use') continue;
-      if (/memory_add$/.test(t.name || '')) { logged = true; continue; }
-      if (!EDIT_TOOLS.has(t.name)) continue;
-      const f = norm(t.input && (t.input.file_path || t.input.notebook_path));
-      if (b && f.startsWith(b)) logged = true; else edits++;
+      if (/memory_add$/.test(t.name || '')) { work = 0; edits = 0; logged = true; continue; }
+      const isEdit = EDIT_TOOLS.has(t.name);
+      if (!isEdit && !COMMAND_TOOLS.has(t.name)) continue;
+      if (isEdit) {
+        const f = norm(t.input && (t.input.file_path || t.input.notebook_path));
+        if (b && f.startsWith(b)) { work = 0; edits = 0; logged = true; continue; }
+        edits++;
+      }
+      work++;
     }
   }
-  return { remind: edits >= MIN_EDITS && !logged, edits, logged };
+  return { remind: work >= MIN_WORK, work, edits, logged };
 }
 
-module.exports = { decide, MIN_EDITS, COOLDOWN_MS };
+module.exports = { decide, MIN_WORK, COOLDOWN_MS };
 
 if (require.main === module) {
   let input = '';
@@ -60,7 +63,7 @@ if (require.main === module) {
       fs.writeFileSync(stamp, String(Date.now()));
       process.stdout.write(JSON.stringify({
         decision: 'block',
-        reason: `Memory reminder: this reply changed ${r.edits} files but logged nothing. If a task finished, a decision was made or something failed, call memory_add now (one short entry, with the reason for a DECISION). If nothing is worth saving, just say "nothing to log" in a few words.`,
+        reason: `Memory reminder: this chat has ${r.work} actions (${r.edits} file edits, the rest commands such as deploys or tests) since the last memory_add. If a step finished, a decision was made or something failed, call memory_add now (one short entry, with the reason for a DECISION). If nothing is worth saving, just say "nothing to log" in a few words.`,
       }));
     } catch {}
     process.exit(0);

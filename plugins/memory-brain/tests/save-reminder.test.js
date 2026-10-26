@@ -23,14 +23,22 @@ const use = (name, input) => ({ type: 'assistant', message: { role: 'assistant',
 const edit = (f) => use('Edit', { file_path: f });
 const edits = (n) => Array.from({ length: n }, (_, i) => [edit(path.join(work, `code${i}.js`)), result()]).flat();
 
-check('3 edits and no log: remind', decide([prompt('go'), ...edits(3)], brain).remind === true);
-check('2 edits: quiet', decide([prompt('go'), ...edits(2)], brain).remind === false);
-check('memory_add in the reply: quiet', decide([prompt('go'), ...edits(4), use('mcp__plugin_memory-brain_memory-brain__memory_add', {}), result()], brain).remind === false);
-check('a note written directly in the brain counts as logged: quiet', decide([prompt('go'), ...edits(4), edit(path.join(brain, 'projects', 'project_x.md')), result()], brain).remind === false);
-check('edits of the brain itself do not count as work', decide([prompt('go'), edit(path.join(brain, 'a.md')), edit(path.join(brain, 'b.md')), edit(path.join(brain, 'c.md'))], brain).remind === false);
-check('only the last reply counts', decide([prompt('one'), ...edits(5), prompt('two'), ...edits(1)], brain).remind === false);
-check('tool results do not start a new reply', decide([prompt('go'), ...edits(2), result(), ...edits(2)], brain).remind === true);
-check('Bash and Read are not edits', decide([prompt('go'), use('Bash', { command: 'x' }), use('Read', { file_path: 'a' }), use('Bash', {}), use('Bash', {})], brain).remind === false);
+const cmds = (n) => Array.from({ length: n }, () => [use('Bash', { command: 'npm test' }), result()]).flat();
+const logCall = () => use('mcp__plugin_memory-brain_memory-brain__memory_add', {});
+
+check('4 edits and no log: remind', decide([prompt('go'), ...edits(4)], brain).remind === true);
+check('3 edits: quiet', decide([prompt('go'), ...edits(3)], brain).remind === false);
+check('commands count as work (deploys, tests): 4 Bash remind', decide([prompt('go'), ...cmds(4)], brain).remind === true);
+check('PowerShell counts as work', decide([prompt('go'), ...Array.from({ length: 4 }, () => use('PowerShell', { command: 'x' }))], brain).remind === true);
+check('edits and commands add up', decide([prompt('go'), ...edits(2), ...cmds(2)], brain).remind === true);
+check('Read and search are not work', decide([prompt('go'), ...Array.from({ length: 6 }, () => use('Read', { file_path: 'a' })), use('Grep', {}), use('Glob', {})], brain).remind === false);
+check('memory_add after the work: quiet', decide([prompt('go'), ...edits(5), logCall(), result()], brain).remind === false);
+check('a note written directly in the brain counts as logged: quiet', decide([prompt('go'), ...edits(5), edit(path.join(brain, 'projects', 'project_x.md')), result()], brain).remind === false);
+check('edits of the brain itself do not count as work', decide([prompt('go'), ...Array.from({ length: 5 }, (_, i) => edit(path.join(brain, `n${i}.md`)))], brain).remind === false);
+check('work counts across replies since the last save', decide([prompt('one'), ...cmds(2), prompt('two'), ...edits(2)], brain).remind === true);
+check('only work after the last memory_add counts', decide([prompt('one'), ...edits(5), logCall(), prompt('two'), ...cmds(2)], brain).remind === false);
+check('work after the last memory_add can remind again', decide([prompt('one'), logCall(), prompt('two'), ...edits(4)], brain).remind === true);
+check('counts are reported', (() => { const r = decide([prompt('go'), ...edits(2), ...cmds(3)], brain); return r.work === 5 && r.edits === 2; })());
 check('empty transcript is quiet', decide([], brain).remind === false);
 
 // ---- the real script, end to end
@@ -40,14 +48,14 @@ const run = (ev) => spawnSync('node', [path.join(__dirname, '..', 'scripts', 'sa
   input: JSON.stringify(ev), encoding: 'utf8', timeout: 8000,
   env: { ...process.env, CLAUDE_PLUGIN_OPTION_BRAIN_DIR: brain, CLAUDE_CONFIG_DIR: path.join(work, 'claude') },
 });
-writeT([prompt('go'), ...edits(3)]);
+writeT([prompt('go'), ...edits(2), ...cmds(2)]);
 let r = run({ session_id: 'sr-test-1', transcript_path: transcript });
 let out = {};
 try { out = JSON.parse(r.stdout); } catch {}
 check('script asks Claude to log (decision block)', out.decision === 'block' && /memory_add/.test(out.reason || ''), r.stdout + r.stderr);
 check('script exits 0', r.status === 0);
 r = run({ session_id: 'sr-test-1', transcript_path: transcript });
-check('second call inside 30 minutes is quiet (cooldown)', r.stdout === '' && r.status === 0, r.stdout);
+check('second call inside 10 minutes is quiet (cooldown)', r.stdout === '' && r.status === 0, r.stdout);
 r = run({ session_id: 'sr-test-2', transcript_path: transcript, stop_hook_active: true });
 check('stop_hook_active never loops', r.stdout === '' && r.status === 0, r.stdout);
 r = run({ session_id: 'sr-test-3', transcript_path: path.join(work, 'missing.jsonl') });
